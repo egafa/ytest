@@ -7,8 +7,8 @@ import (
 	"os"
 	"os/signal"
 
-	handler "github.com/egafa/Spr1Inc1/api/handler"
-	model "github.com/egafa/Spr1Inc1/api/model"
+	handler "github.com/egafa/ytest/api/handler"
+	model "github.com/egafa/ytest/api/model"
 )
 
 func main() {
@@ -21,16 +21,12 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/update/", handler.MetricHandler(mm))
-	//mux.HandleFunc("/", handler.HomeHandler)
 
 	srv := &http.Server{
 		Handler: mux,
 	}
 
-	//var srv http.Server
-
 	srv.Addr = addr
-	//srv.Handler = mux
 
 	idleConnsClosed := make(chan struct{})
 	go func() {
@@ -46,7 +42,6 @@ func main() {
 		close(idleConnsClosed)
 	}()
 
-	//fmt.Println("Запуск сервера на %s", addr)
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		// Error starting or closing listener:
 		log.Fatalf("HTTP server ListenAndServe: %v", err)
@@ -54,5 +49,4 @@ func main() {
 
 	<-idleConnsClosed
 
-	//fmt.Println("Запуск сервера на %v", mm)
 }

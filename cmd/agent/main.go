@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"context"
 	"context"
 	"fmt"
 	"log"
@@ -13,11 +12,9 @@ import (
 	"runtime"
 	"syscall"
 	"time"
-	//"flag"
-	//"time"
 )
 
-func formMetric(ctx context.Context, addrServer string, namesMetric map[string]string, dataChannel chan string, loger bool) {
+func formMetric(ctx context.Context, cfg cfg, namesMetric map[string]string, dataChannel chan string) {
 
 	f, err := os.OpenFile("text.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -26,18 +23,16 @@ func formMetric(ctx context.Context, addrServer string, namesMetric map[string]s
 	defer f.Close()
 
 	infoLog := log.New(f, "INFO\t", log.Ldate|log.Ltime)
+	addrServer := cfg.addrServer
 
 	pollCount := 0
 	for { //i := 0; i < 3; i++ {
 
-		//fmt.Println("Прошло1")
 		select {
 		case <-ctx.Done():
 			return
 		default:
 			{
-
-				//fmt.Println("Прошло2")
 
 				ms := runtime.MemStats{}
 				runtime.ReadMemStats(&ms)
@@ -45,34 +40,31 @@ func formMetric(ctx context.Context, addrServer string, namesMetric map[string]s
 				v := reflect.ValueOf(ms)
 				for key, typeNаme := range namesMetric {
 
-					//fmt.Printf("Field: %s\n", typeOfS.Field(i).Name)
 					val := v.FieldByName(key).Interface()
-					//fmt.Printf("Field: %s\tValue: %v\n", names1[i], v.Field(i).Interface())
 
 					addr := addrServer + "/update/" + typeNаme + "/" + key + "/" + fmt.Sprintf("%v", val)
-					if loger {
+					if cfg.log {
 						infoLog.Printf("Request text: %s\n", addr)
 					}
-					fmt.Println(addr)
 					dataChannel <- addr
 
 				}
 				pollCount++
 				addr := addrServer + "/update/counter/PollCount/" + fmt.Sprintf("%v", pollCount)
-				if loger {
+				if cfg.log {
 					infoLog.Printf("Request text: %s\n", addr)
 				}
 				fmt.Println(addr)
 				dataChannel <- addr
 
 				addr1 := addrServer + "/update/gauge/RandomValue/" + fmt.Sprintf("%v", rand.Float64())
-				if loger {
+				if cfg.log {
 					infoLog.Printf("Request text: %s\n", addr)
 				}
 				fmt.Println(addr1)
 				dataChannel <- addr1
 
-				time.Sleep(2 * time.Second)
+				time.Sleep(time.Duration(cfg.intervalMetric) * time.Second)
 			}
 		}
 	}
@@ -117,9 +109,19 @@ func sendMetric(ctx context.Context, dataChannel chan string, stopchanel chan in
 
 }
 
+type cfg struct {
+	addrServer     string
+	log            bool
+	intervalMetric int
+}
+
 func main() {
 
-	addrServer := "http://127.0.0.1:8080"
+	cfg := cfg{
+		addrServer:     "http://127.0.0.1:8080",
+		log:            false,
+		intervalMetric: 2,
+	}
 
 	ms := runtime.MemStats{}
 	runtime.ReadMemStats(&ms)
@@ -148,12 +150,12 @@ func main() {
 
 	dataChannel := make(chan string, len(namesMetric)*100)
 	stopchanel := make(chan int, 1)
-	go formMetric(ctx, addrServer, namesMetric, dataChannel, true)
+	go formMetric(ctx, cfg, namesMetric, dataChannel)
 
 	timer := time.NewTimer(4 * time.Second) // создаём таймер
 	<-timer.C
 
-	go sendMetric(ctx, dataChannel, stopchanel, true)
+	go sendMetric(ctx, dataChannel, stopchanel, cfg.log)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
