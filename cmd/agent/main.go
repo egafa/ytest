@@ -54,14 +54,12 @@ func formMetric(ctx context.Context, cfg cfg, namesMetric map[string]string, dat
 				if cfg.log {
 					infoLog.Printf("Request text: %s\n", addr)
 				}
-				fmt.Println(addr)
 				dataChannel <- addr
 
 				addr1 := addrServer + "/update/gauge/RandomValue/" + fmt.Sprintf("%v", rand.Float64())
 				if cfg.log {
 					infoLog.Printf("Request text: %s\n", addr)
 				}
-				fmt.Println(addr1)
 				dataChannel <- addr1
 
 				time.Sleep(time.Duration(cfg.intervalMetric) * time.Second)
@@ -119,8 +117,8 @@ func main() {
 
 	cfg := cfg{
 		addrServer:     "http://127.0.0.1:8080",
-		log:            false,
-		intervalMetric: 2,
+		log:            true,
+		intervalMetric: 4,
 	}
 
 	ms := runtime.MemStats{}

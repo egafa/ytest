@@ -11,13 +11,20 @@ import (
 	model "github.com/egafa/ytest/api/model"
 )
 
+type cfg struct {
+	addrServer string
+	log        bool
+}
+
 func main() {
+	cfg := cfg{
+		addrServer: "http://127.0.0.1:8080",
+		log:        true,
+	}
 
 	mm := model.MapMetric{}
 	mm.GaugeData = make(map[string]float64)
 	mm.CounterData = make(map[string][]int64)
-
-	addr := "127.0.0.1:8080"
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/update/", handler.MetricHandler(mm))
@@ -26,7 +33,7 @@ func main() {
 		Handler: mux,
 	}
 
-	srv.Addr = addr
+	srv.Addr = cfg.addrServer
 
 	idleConnsClosed := make(chan struct{})
 	go func() {
