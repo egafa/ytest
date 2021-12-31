@@ -68,7 +68,7 @@ func formMetric(ctx context.Context, cfg cfg, namesMetric map[string]string, dat
 	}
 }
 
-func sendMetric(ctx context.Context, dataChannel chan string, stopchanel chan int, loger bool) {
+func sendMetric(ctx context.Context, dataChannel chan string, stopchanel chan int, cfg cfg) {
 	var textReq string
 	f, err := os.OpenFile("textreq.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -79,6 +79,7 @@ func sendMetric(ctx context.Context, dataChannel chan string, stopchanel chan in
 	infoLog := log.New(f, "INFO\t", log.Ldate|log.Ltime)
 
 	client := &http.Client{}
+	client.Timeout = time.Second * time.Duration(cfg.timeout)
 
 	for { //i := 0; i < 40; i++ {
 
@@ -87,7 +88,7 @@ func sendMetric(ctx context.Context, dataChannel chan string, stopchanel chan in
 			{
 				req, _ := http.NewRequest(http.MethodGet, textReq, nil)
 				resp, err := client.Do(req)
-				if loger {
+				if cfg.log {
 					infoLog.Printf("Request text: %s\n", req.URL)
 				}
 
@@ -95,7 +96,7 @@ func sendMetric(ctx context.Context, dataChannel chan string, stopchanel chan in
 					continue
 				}
 
-				if loger {
+				if cfg.log {
 					infoLog.Printf("Status: " + resp.Status)
 				}
 			}
@@ -111,6 +112,7 @@ type cfg struct {
 	addrServer     string
 	log            bool
 	intervalMetric int
+	timeout        int
 }
 
 func main() {
@@ -119,6 +121,7 @@ func main() {
 		addrServer:     "http://127.0.0.1:8080",
 		log:            true,
 		intervalMetric: 4,
+		timeout:        3,
 	}
 
 	ms := runtime.MemStats{}
@@ -153,7 +156,7 @@ func main() {
 	timer := time.NewTimer(4 * time.Second) // создаём таймер
 	<-timer.C
 
-	go sendMetric(ctx, dataChannel, stopchanel, cfg.log)
+	go sendMetric(ctx, dataChannel, stopchanel, cfg)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)

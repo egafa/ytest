@@ -9,31 +9,35 @@ import (
 
 	handler "github.com/egafa/ytest/api/handler"
 	model "github.com/egafa/ytest/api/model"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
-type cfg struct {
-	addrServer string
-	log        bool
-}
-
 func main() {
-	cfg := cfg{
-		addrServer: "http://127.0.0.1:8080",
-		log:        true,
-	}
 
-	mm := model.MapMetric{}
-	mm.GaugeData = make(map[string]float64)
-	mm.CounterData = make(map[string][]int64)
+	addr := "127.0.0.1:8080"
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/update/", handler.MetricHandler(mm))
+	model.InitMapMetricVal()
+
+	r := chi.NewRouter()
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	r.Route("/update", func(r chi.Router) {
+		r.Get("/{typeMetric}/{nammeMetric}/{valueMetric}", handler.UpdateMetricHandlerChi)
+	})
+
+	r.Route("/value", func(r chi.Router) {
+		r.Get("/{typeMetric}/{nammeMetric}", handler.ValueMetricHandlerChi)
+	})
 
 	srv := &http.Server{
-		Handler: mux,
+		Handler: r,
 	}
 
-	srv.Addr = cfg.addrServer
+	srv.Addr = addr
 
 	idleConnsClosed := make(chan struct{})
 	go func() {

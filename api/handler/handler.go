@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/egafa/ytest/api/model"
+	"github.com/go-chi/chi/v5"
 )
 
 func MetricHandler(m model.Metric) http.HandlerFunc {
@@ -44,4 +46,64 @@ func MetricHandler(m model.Metric) http.HandlerFunc {
 		//}
 
 	}
+}
+
+func UpdateMetricHandlerChi(w http.ResponseWriter, r *http.Request) {
+	var m model.MapMetric
+
+	typeMetric := chi.URLParam(r, "typeMetric")
+	nameMetric := chi.URLParam(r, "nammeMetric")
+	valueMetric := chi.URLParam(r, "valueMetric")
+
+	m = model.GetMapMetricVal()
+
+	if typeMetric == "gauge" {
+		f, err := strconv.ParseFloat(valueMetric, 64)
+		if err != nil {
+			m.SaveGaugeVal(nameMetric, 0)
+		}
+		m.SaveGaugeVal(nameMetric, f)
+	}
+
+	if typeMetric == "counter" {
+		i, err := strconv.ParseInt(valueMetric, 10, 64)
+		if err != nil {
+			m.SaveCounterVal(nameMetric, 0)
+		}
+		m.SaveCounterVal(nameMetric, i)
+	}
+
+}
+
+func ValueMetricHandlerChi(w http.ResponseWriter, r *http.Request) {
+	var m model.MapMetric
+	var nilerror *error = nil
+
+	typeMetric := chi.URLParam(r, "typeMetric")
+	nameMetric := chi.URLParam(r, "nammeMetric")
+
+	m = model.GetMapMetricVal()
+
+	if typeMetric == "gauge" {
+		val, err := m.GetGaugeVal(nameMetric)
+		if &err != nilerror {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(fmt.Sprintf("nameMetric %s is: %v\n", nameMetric, val)))
+		} else {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+
+	}
+
+	if typeMetric == "counter" {
+
+		val, err := m.GetCounterVal(nameMetric, -1)
+		if &err != nilerror {
+			w.Write([]byte(fmt.Sprintf("nameMetric %s is: %v\n", nameMetric, val)))
+		} else {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+
+	}
+
 }

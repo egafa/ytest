@@ -1,5 +1,9 @@
 package model
 
+import (
+	"errors"
+)
+
 type Metric interface {
 	SaveGaugeVal(nameMetric string, value float64)
 	GetGaugeVal(nameMetric string) float64
@@ -12,12 +16,30 @@ type MapMetric struct {
 	CounterData map[string][]int64
 }
 
+var MapMetricVal MapMetric
+
+func GetMapMetricVal() MapMetric {
+	return MapMetricVal
+}
+
+func InitMapMetricVal() {
+	MapMetricVal = MapMetric{}
+	MapMetricVal.GaugeData = make(map[string]float64)
+	MapMetricVal.CounterData = make(map[string][]int64)
+}
+
 func (m MapMetric) SaveGaugeVal(nameMetric string, value float64) {
 	m.GaugeData[nameMetric] = value
 }
 
-func (m MapMetric) GetGaugeVal(nameMetric string) float64 {
-	return m.GaugeData[nameMetric]
+func (m MapMetric) GetGaugeVal(nameMetric string) (float64, error) {
+	res, ok := m.GaugeData[nameMetric]
+	if ok {
+		return res, nil
+	} else {
+		return 0, errors.New("Не найдена метрика")
+	}
+
 }
 
 func (m MapMetric) SaveCounterVal(nameMetric string, value int64) {
@@ -32,6 +54,13 @@ func (m MapMetric) SaveCounterVal(nameMetric string, value int64) {
 	m.CounterData[nameMetric] = v
 }
 
-func (m MapMetric) GetCounterVal(nameMetric string, num int64) int64 {
-	return 0
+func (m MapMetric) GetCounterVal(nameMetric string, num int64) (int64, error) {
+	var v []int64
+
+	v, ok := m.CounterData[nameMetric]
+	if ok {
+		return v[len(v)-1], nil
+	} else {
+		return 0, errors.New("Не найдена метрика")
+	}
 }
