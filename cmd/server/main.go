@@ -25,6 +25,11 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	r.Route("/", func(r chi.Router) {
+		r.Use()
+		r.Get("/", handler.ListMetricsChi)
+	})
+
 	r.Route("/update", func(r chi.Router) {
 		r.Get("/{typeMetric}/{nammeMetric}/{valueMetric}", handler.UpdateMetricHandlerChi)
 	})

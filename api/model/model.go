@@ -16,6 +16,15 @@ type MapMetric struct {
 	CounterData map[string][]int64
 }
 
+type GaugeTemplateMetric struct {
+	Typemetric string
+	Data       map[string]float64
+}
+type CounterTemplateMetric struct {
+	Typemetric string
+	Data       map[string]int64
+}
+
 var MapMetricVal MapMetric
 
 func GetMapMetricVal() MapMetric {
@@ -63,4 +72,30 @@ func (m MapMetric) GetCounterVal(nameMetric string, num int64) (int64, error) {
 	} else {
 		return 0, errors.New("Не найдена метрика")
 	}
+}
+
+func (m MapMetric) GetGaugetMetricTemplate() GaugeTemplateMetric {
+
+	res := GaugeTemplateMetric{}
+
+	res.Data = make(map[string]float64)
+
+	res.Data = m.GaugeData
+	res.Typemetric = "Gauge"
+
+	return res
+}
+
+func (m MapMetric) GetCounterMetricTemplate() CounterTemplateMetric {
+
+	res := CounterTemplateMetric{}
+
+	res.Data = make(map[string]int64)
+	res.Typemetric = "Counter"
+
+	for name, v := range m.CounterData {
+		res.Data[name] = v[len(v)-1]
+	}
+
+	return res
 }

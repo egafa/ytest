@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -90,7 +91,7 @@ func ValueMetricHandlerChi(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(fmt.Sprintf("nameMetric %s is: %v\n", nameMetric, val)))
 		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusNotFound)
 		}
 
 	}
@@ -101,9 +102,38 @@ func ValueMetricHandlerChi(w http.ResponseWriter, r *http.Request) {
 		if &err != nilerror {
 			w.Write([]byte(fmt.Sprintf("nameMetric %s is: %v\n", nameMetric, val)))
 		} else {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusNotFound)
 		}
 
+	}
+
+}
+
+func ListMetricsChi(w http.ResponseWriter, r *http.Request) {
+	m := model.GetMapMetricVal()
+	CounterData := m.GetCounterMetricTemplate()
+	GaugeData := m.GetGaugetMetricTemplate()
+
+	files := []string{
+		"./internal/temptable.tmpl",
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	err = ts.Execute(w, CounterData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	err = ts.Execute(w, GaugeData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
 	}
 
 }
